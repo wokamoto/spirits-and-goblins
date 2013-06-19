@@ -6,17 +6,33 @@ if ( !class_exists('otp') )
 
 class SpiritsAndGoblins {
 	const TEXT_DOMAIN = 'spirits-and-goblins';
+
 	const DEFAULT_SEQUENCE = 100;
+	const OTP_ALGORITHM = 'sha1';
+	const OTP_LENGTH = 6;
 
-	static $instance; // to store a reference to the plugin, allows other plugins to remove actions
+	static $instance;
 
-	/* Constructor, entry point of the plugin */
 	function __construct() {
 		self::$instance = $this;
 
 		add_action('login_form', array($this, 'login_form'));
 		add_action('register_form', array($this, 'login_form'));
 		add_action('login_form_otp', array($this, 'login_form_otp'));
+		add_action('login_form_login', array($this, 'login_form_login'));
+	}
+
+	public function login_form_login(){
+		global $action;
+
+		$user_login = isset($_POST['log']) ? $_POST['log'] : '';
+		$user_pwd   = isset($_POST['pwd']) ? $_POST['pwd'] : '';
+		$user = wp_authenticate($user_login, $user_pwd);
+		if (is_wp_error($user))
+			return;
+
+		if ( $action !== 'otp')
+			wp_die(__('Unknown error!', self::TEXT_DOMAIN));
 	}
 
 	public function login_form(){
@@ -34,13 +50,19 @@ class SpiritsAndGoblins {
 		$rememberme = isset($_POST['rememberme']) ? intval($_POST['rememberme']) : '';
 
 		// get user
-		$user_login = '';
-		if ( isset($_POST['log']) ) {
-			$user_login = sanitize_user($_POST['log']);
-			$user = get_user_by('login', $user_login);
+		if ( !$otpass ) {
+			$user_login = isset($_POST['log']) ? $_POST['log'] : '';
+			$user_pwd   = isset($_POST['pwd']) ? $_POST['pwd'] : '';
+			$user = wp_authenticate($user_login, $user_pwd);
+		} else {
+			$user_login = '';
+			if ( isset($_POST['log']) ) {
+				$user_login = sanitize_user($_POST['log']);
+				$user = get_user_by('login', $user_login);
+			}
 		}
-		if (!isset($user))
-			wp_die(__('not logged in', self::TEXT_DOMAIN));
+		if ( !isset($user) || is_wp_error($user) )
+			return;
 
 		if ( !empty($user_login) && !force_ssl_admin() && $user && get_user_option('use_ssl', $user->ID) ) {
 			$secure_cookie = true;
@@ -64,6 +86,7 @@ class SpiritsAndGoblins {
 		$verify_otp = $this->verify_otp($user, $otpass);
 		if ( !is_wp_error($verify_otp) ) {
 			wp_set_auth_cookie($user->ID, $rememberme, $secure_cookie);
+			do_action('wp_login', $user_login, $user);
 			if ( $interim_login ) {
 				$message = '<p class="message">' . __('You have logged in successfully.') . '</p>';
 				login_header( '', $message );
@@ -144,23 +167,23 @@ if(typeof wpOnload=='function')wpOnload();
 		if ( !$user || !$user->exists() )
 			return new WP_Error('not_logged_in', __('not logged in', self::TEXT_DOMAIN));
 
-		$seequence_count = get_user_meta($user->ID, 'sag_seq', true);
-		if ( !$seequence_count ) {
-			$seequence_count = self::DEFAULT_SEQUENCE;
-			add_user_meta($user->ID, 'sag_seq', $seequence_count, true);
+		$seq = get_user_meta($user->ID, 'sag_seq', true);
+		if ( !$seq ) {
+			$seq = self::DEFAULT_SEQUENCE;
+			add_user_meta($user->ID, 'sag_seq', $seq, true);
 		}
-		$seequence_count = intval($seequence_count);
+		$seq = intval($seq);
 
 		$otpass = intval($otpass);
-		$otpass_org = intval($this->get_otp($user, $seequence_count));
+		$otpass_org = intval($this->get_otp($user, $seq));
 		if ($otpass) {
-			$seequence_count--;
-			if (!$seequence_count) {
+			$seq--;
+			if (!$seq) {
 				$otp = new otp();
 				update_user_meta($user->ID, 'sag_seed', $otp->generateSeed());
 				update_user_meta($user->ID, 'sag_seq', self::DEFAULT_SEQUENCE);
 			} else {
-				update_user_meta($user->ID, 'sag_seq', $seequence_count);
+				update_user_meta($user->ID, 'sag_seq', $seq);
 			}
 		}
 
@@ -170,7 +193,7 @@ if(typeof wpOnload=='function')wpOnload();
 			: new WP_Error('otp_error', sprintf(__('One time password incorrect for %s', self::TEXT_DOMAIN), $user->get('display_name')));
 	}
 
-	private function get_otp($user = null, $seequence_count = false) {
+	private function get_otp($user = null, $seq = false) {
 		if ( !isset($user) )
 			$user = wp_get_current_user();
 		if ( !$user || is_wp_error($user) )
@@ -184,23 +207,26 @@ if(typeof wpOnload=='function')wpOnload();
 			update_user_meta($user->ID, 'sag_seed', $seed);
 		}
 
-		if ( !$seequence_count ) {
-			$seequence_count = get_user_meta($user->ID, 'sag_seq', true);
-			if ( !$seequence_count ) {
-				$seequence_count = self::DEFAULT_SEQUENCE;
-				add_user_meta($user->ID, 'sag_seq', $seequence_count, true);
+		if ( !$seq ) {
+			$seq = get_user_meta($user->ID, 'sag_seq', true);
+			if ( !$seq ) {
+				$seq = self::DEFAULT_SEQUENCE;
+				add_user_meta($user->ID, 'sag_seq', $seq, true);
 			}
 		}
-		$seequence_count = intval($seequence_count);
+		$seq = intval($seq);
 
-		$pass_phrase = defined('AUTH_SALT') ? AUTH_SALT : (defined('COOKIEHASH') ? COOKIEHASH : md5(get_site_option('siteurl')));
-		if ( $pass = $otp->generateOtp($pass_phrase, $seed, $seequence_count, 'sha1') ) {
-			$pass_dec = abs(hexdec($pass['hex_otp']) % pow(10,6));
-			//update_user_meta($user->ID, 'sag_otp', array('dec_otp' => $pass_dec, 'seequence_count' => $seequence_count));
+		if ( $pass = $otp->generateOtp($this->pass_phrase(), $seed, $seq, self::OTP_ALGORITHM) ) {
+			$pass_dec = sprintf('%0'.self::OTP_LENGTH.'d', abs(hexdec($pass['hex_otp']) % pow(10,self::OTP_LENGTH)));
+			//update_user_meta($user->ID, 'sag_otp', array('dec_otp' => $pass_dec, 'seequence_count' => $seq));
 			return $pass_dec;
 		} else {
 			return false;
 		}
+	}
+
+	private function pass_phrase() {
+		return defined('AUTH_SALT') ? AUTH_SALT : (defined('COOKIEHASH') ? COOKIEHASH : md5(get_site_option('siteurl')));
 	}
 
 	private function send_otp($user) {

@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Spirits and Goblins
-Version: 0.1.0
+Version: 0.1.1
 Plugin URI: https://github.com/wokamoto/spirits-and-goblins
 Description:  
 Author: wokamoto
