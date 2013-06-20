@@ -347,10 +347,13 @@ if(typeof wpOnload=='function')wpOnload();
 
 	private function sms($country, $phone_number, $message, $args = array()){
 		try {
+			$phone_number = $this->phone_number($country, $phone_number);
+			if (is_wp_error($phone_number))
+				return $phone_number;
 			$client = $this->twilio($args['twilio_sid'], $args['twilio_token']);
 			$message = $client->account->sms_messages->create(
 				$args['twilio_phone'],
-				$this->phone_number($country, $phone_number),
+				$phone_number,
 				$message
 				);
 			return "Success: {$message->sid} - {$message->body}\n";
