@@ -6,6 +6,7 @@ class SpiritsAndGoblins_Admin {
 	const OPTION_KEY  = 'spirits-and-goblins';
 	const OPTION_PAGE = 'spirits-and-goblins';
 
+	const USER_META_COUNTRY = 'country';
 	const USER_META_PHONE = 'phone_number';
 
 	static $instance;
@@ -23,7 +24,11 @@ class SpiritsAndGoblins_Admin {
 		add_action('admin_menu', array($this, 'admin_menu'));
 		add_filter('plugin_action_links', array($this, 'plugin_setting_links'), 10, 2 );
 
-		add_filter('user_contactmethods', array($this, 'user_contactmethods'), 10, 2);
+		add_action('show_user_profile', array($this, 'edit_user_profile'));
+		add_action('edit_user_profile', array($this, 'edit_user_profile'));
+		add_action('personal_options_update', array($this, 'edit_user_profile_update'));
+		add_action('edit_user_profile_update', array($this, 'edit_user_profile_update'));
+		//add_filter('user_contactmethods', array($this, 'user_contactmethods'), 10, 2);
 	}
 
 	static public function option_keys(){
@@ -185,8 +190,65 @@ class SpiritsAndGoblins_Admin {
 	//**************************************************************************************
 	public function user_contactmethods($user_contactmethods, $user){
 		if ($this->options['send_option'] === 'sms')
+			$user_contactmethods[self::USER_META_COUNTRY] = __('Country', SpiritsAndGoblins::TEXT_DOMAIN);
 			$user_contactmethods[self::USER_META_PHONE] = __('Phone number', SpiritsAndGoblins::TEXT_DOMAIN);
 		return $user_contactmethods;
+	}
+
+	//**************************************************************************************
+	// edit user profile
+	//**************************************************************************************
+	public function edit_user_profile($user) {
+		if (!class_exists('CountryNameToCountryCodeMap'))
+			require(dirname(__FILE__).'/class-CountryNameToCountryCodeMap.php');
+		$contry_code = CountryNameToCountryCodeMap::$countryNameToCountryCodeMap;
+
+		$country = get_user_meta($user->ID, self::USER_META_COUNTRY, true);
+		$phone_number = get_user_meta($user->ID, self::USER_META_PHONE, true);
+?>
+<table class="form-table" id="phone">
+<tbody>
+<tr>
+	<th><label for="<?php echo self::USER_META_COUNTRY; ?>"><?php _e('Country', SpiritsAndGoblins::TEXT_DOMAIN); ?></label></th>
+	<td><select name="<?php echo self::USER_META_COUNTRY; ?>">
+		<option value=""></option>
+<?php foreach ($contry_code as $name => $code) { ?>
+
+		<option value="<?php echo esc_attr($code); ?>"<?php echo $code == $country ? ' selected' : ''; ?>><?php echo $name; ?></option>
+<?php } ?>
+	</select></td>
+	</td>
+</tr>
+<tr>
+	<th><label for="<?php echo self::USER_META_COUNTRY; ?>"><?php _e('Phone number', SpiritsAndGoblins::TEXT_DOMAIN); ?></label></th>
+	<td>
+		<input type="text" name="<?php echo self::USER_META_PHONE; ?>" id="<?php echo self::USER_META_PHONE; ?>" value="<?php echo esc_attr($phone_number); ?>" class="regular-text code" />
+	</td>
+</tr>
+</tbody>
+</table>
+<script type="text/javascript">
+jQuery(function($){$('#email').parent().parent().after($('table#phone tr'));$('table#phone').remove();});
+</script>
+<?php
+	}
+
+	public function edit_user_profile_update($user_id){
+		$iv = new InputValidator('POST');
+		$iv->set_rules(self::USER_META_COUNTRY, array('trim','esc_html'));
+		$iv->set_rules(self::USER_META_PHONE,   array('trim','esc_html'));
+
+		if ($iv->input(self::USER_META_COUNTRY))
+			update_user_meta($user_id, self::USER_META_COUNTRY, $iv->input(self::USER_META_COUNTRY));
+		else
+			delete_user_meta($user_id, self::USER_META_COUNTRY);
+
+		if ($iv->input(self::USER_META_PHONE))
+			update_user_meta($user_id, self::USER_META_PHONE, $iv->input(self::USER_META_PHONE));
+		else
+			delete_user_meta($user_id, self::USER_META_PHONE);
+
+		unset($iv);
 	}
 
 	//**************************************************************************************

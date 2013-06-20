@@ -1,6 +1,4 @@
 <?php
-if ( !class_exists('Services_Twilio') )
-	require dirname(__FILE__).'/twilio-php/Services/Twilio.php';
 if ( !class_exists('otp') )
 	require dirname(__FILE__).'/php-otp-1.1.1/class.otp.php';
 
@@ -66,18 +64,36 @@ class SpiritsAndGoblins {
 		if ($this->options['send_option'] !== 'sms')
 			return;
 
-		$meta_key = SpiritsAndGoblins_Admin::USER_META_PHONE;
-		$user_phone = isset($_POST[$meta_key]) ? $_POST[$meta_key] : '';
-		if (empty($meta_key))
-			return;
-		update_user_meta($user_id, $meta_key, $user_phone);
+		$iv = new InputValidator('POST');
+		$iv->set_rules(self::USER_META_COUNTRY, array('trim','esc_html'));
+		$iv->set_rules(self::USER_META_PHONE,   array('trim','esc_html'));
+
+		if ($iv->input(self::USER_META_COUNTRY))
+			update_user_meta($user_id, self::USER_META_COUNTRY, $iv->input(self::USER_META_COUNTRY));
+		if ($iv->input(self::USER_META_PHONE))
+			update_user_meta($user_id, self::USER_META_PHONE, $iv->input(self::USER_META_PHONE));
+
+		unset($iv);
 	}
 
 	public function register_form(){
 		if ($this->options['send_option'] !== 'sms')
 			return;
 
+		if (!class_exists('CountryNameToCountryCodeMap'))
+			require(dirname(__FILE__).'/class-CountryNameToCountryCodeMap.php');
+		$contry_code = CountryNameToCountryCodeMap::$countryNameToCountryCodeMap;
+
 ?>
+	<p>
+		<label for="<?php echo SpiritsAndGoblins_Admin::USER_META_COUNTRY; ?>"><?php _e('Country', self::TEXT_DOMAIN); ?></label>
+		<select name="<?php echo SpiritsAndGoblins_Admin::USER_META_COUNTRY; ?>">
+		<option value=""></option>
+<?php foreach ($contry_code as $name => $code) { ?>
+
+		<option value="<?php echo esc_attr($code); ?>"><?php echo $name; ?></option>
+<?php } ?>
+	</select></p>
 	<p>
 		<label for="user_email"><?php _e('Phone number', self::TEXT_DOMAIN); ?><br />
 		<input type="text" name="<?php echo SpiritsAndGoblins_Admin::USER_META_PHONE; ?>" id="<?php echo SpiritsAndGoblins_Admin::USER_META_PHONE; ?>" class="input" value="" size="25" /></label>
@@ -288,14 +304,15 @@ if(typeof wpOnload=='function')wpOnload();
 		if (empty($this->options['twilio_sid']) || empty($this->options['twilio_token']) || empty($this->options['twilio_phone']))
 			$send_option = 'mail';
 		if ($send_option === 'sms' || $send_option === 'tel') {
+			$country = get_user_meta( $user->ID, SpiritsAndGoblins_Admin::USER_META_COUNTRY, true );
 			$phone_number = get_user_meta( $user->ID, SpiritsAndGoblins_Admin::USER_META_PHONE, true );
-			if ( !$phone_number )
+			if ( !$country || !$phone_number )
 				$send_option = 'mail';
 		}
 
 		switch($send_option){
 		case 'sms':
-			$result = $this->sms($phone_number, "{$title}: {$message}", $this->options);
+			$result = $this->sms($country, $phone_number, "{$title}: {$message}", $this->options);
 			if (self::DEBUG_MODE)
 				var_dump($result);
 			if (is_wp_error($result))
@@ -309,15 +326,31 @@ if(typeof wpOnload=='function')wpOnload();
 	}
 
 	private function twilio($sid, $token){
+		if ( !class_exists('Services_Twilio') )
+			require dirname(__FILE__).'/twilio-php/Services/Twilio.php';
 		return new Services_Twilio($sid, $token, self::TWILIO_VERSION);
 	}
 
-	private function sms($phone_number, $message, $args = array()){
-		$client = $this->twilio($args['twilio_sid'], $args['twilio_token']);
+	private function phone_number($country, $phone_number){
+		if ( !class_exists('com\google\i18n\phonenumbers\PhoneNumberUtil') )
+			require dirname(__FILE__).'/libphonenumber-for-PHP/PhoneNumberUtil.php';
+		$phone_util = com\google\i18n\phonenumbers\PhoneNumberUtil::getInstance();
 		try {
+			$phone_number_proto = $phone_util->parse($phone_number, strtoupper($country));
+			$phone_number = $phone_util->format($phone_number_proto, com\google\i18n\phonenumbers\PhoneNumberFormat::E164);
+			return $phone_number;
+		} catch (Exception $e) {
+			return new WP_Error('phone_number_error', $e->getMessage());
+		}
+		return $phone_number;
+	}
+
+	private function sms($country, $phone_number, $message, $args = array()){
+		try {
+			$client = $this->twilio($args['twilio_sid'], $args['twilio_token']);
 			$message = $client->account->sms_messages->create(
 				$args['twilio_phone'],
-				$phone_number,
+				$this->phone_number($country, $phone_number),
 				$message
 				);
 			return "Success: {$message->sid} - {$message->body}\n";

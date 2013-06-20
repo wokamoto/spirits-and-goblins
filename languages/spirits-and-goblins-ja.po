@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Spirits and Goblins\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2013-06-20 13:08+0900\n"
-"PO-Revision-Date: 2013-06-20 13:14+0900\n"
+"PO-Revision-Date: 2013-06-20 16:12+0900\n"
 "Last-Translator: wokamoto <wokamoto1973@gmail.com>\n"
 "Language-Team: JAPANESE <http://wppluginsj.sourceforge.jp/>\n"
 "Language: ja_JP\n"
@@ -21,11 +21,19 @@ msgid "Spirits and Goblins"
 msgstr "Spirits and Goblins (魍魎)"
 
 # description
-# msgid ""
-# msgstr ""
+msgid ""
+"This plugin enables 2-step verification using one-time password when you log "
+"in your WordPress."
+msgstr ""
+"このプラグインを有効にすることで、WordPress ログイン時にワンタイムパスワード"
+"による二段階認証を導入することができます。"
+
 #: ../includes/class-SpiritsAndGoblins.php:58
 msgid "Unknown error!"
 msgstr "不明なエラー"
+
+msgid "Country"
+msgstr "国"
 
 #: ../includes/class-SpiritsAndGoblins.php:82
 #: ../includes/class-SpiritsAndGoblins_Admin.php:188

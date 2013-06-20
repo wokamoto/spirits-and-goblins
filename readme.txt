@@ -1,17 +1,17 @@
 === Spirits and Goblins ===
 Contributors: wokamoto, megumithemes
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=9S8AJCY7XB8F4&lc=JP&item_name=WordPress%20Plugins&item_number=wp%2dplugins&currency_code=JPY&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
-Tags: security, login, one time password, twilio
+Tags: security, login, one time password, twilio, 2-step verification
 Requires at least: 3.5
 Tested up to: 3.5.1
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 
-このプラグインを有効にすることで、WordPress ログイン時にワンタイムパスワードによる二段階認証を導入することができます。
+This plugin enables 2-step verification using one-time password when you log in your WordPress.
 
 == Description ==
 
-このプラグインを有効にすることでワンタイムパスワードによる二段階認証を導入することができます。
-ワンタイムパスワードはメールまたは、Twilio を使用して携帯電話へ Short Message として送信できます。
+You can set up 2-step verification using one-time password by this plugin.
+One-time password will be sent to your E-mail or your cell phone as a Short Message using Twilio.
 
 = Localization =
 "Spirits and Goblins" has been translated into languages. Our thanks and appreciation must go to the following for their contributions:
@@ -37,6 +37,6 @@ none
 
 == Changelog == 
 
-**0.2.0 - June 20, 2013**
+**0.2.1 - June 20, 2013**
 
 Initial release.

@@ -15,11 +15,14 @@ msgid "Spirits and Goblins"
 msgstr ""
 
 # description
-#msgid ""
-#msgstr ""
+msgid "This plugin enables 2-step verification using one-time password when you log in your WordPress."
+msgstr ""
 
 #: ../includes/class-SpiritsAndGoblins.php:58
 msgid "Unknown error!"
+msgstr ""
+
+msgid "Country"
 msgstr ""
 
 #: ../includes/class-SpiritsAndGoblins.php:82
