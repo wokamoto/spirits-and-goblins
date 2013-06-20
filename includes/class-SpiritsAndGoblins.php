@@ -6,20 +6,43 @@ if ( !class_exists('otp') )
 
 class SpiritsAndGoblins {
 	const TEXT_DOMAIN = 'spirits-and-goblins';
+	const DEBUG_MODE = false;
 
-	const DEFAULT_SEQUENCE = 100;
+	const DEFAULT_SEQ = 100;
 	const OTP_ALGORITHM = 'sha1';
 	const OTP_LENGTH = 6;
+	const OTP_EXPIRES = 300;
+	const SEND_OPTION = 'mail';
+	const META_KEY_SEED = 'sag_seed';
+	const META_KEY_SEQ = 'sag_seq';
+
+	const TWILIO_VERSION = '2010-04-01';
 
 	static $instance;
 
-	function __construct() {
+	private $options = array();
+
+	function __construct($options = null) {
 		self::$instance = $this;
 
+		if ($options) {
+			$this->options['send_option']  = isset($options['send_option'])  ? $options['send_option'] : self::SEND_OPTION;
+			$this->options['otp_length']   = intval(isset($options['otp_length'])  ? $options['otp_length']  : self::OTP_LENGTH);
+			$this->options['otp_expires']  = intval(isset($options['otp_expires']) ? $options['otp_expires'] : self::OTP_EXPIRES);
+			$this->options['twilio_sid']   = isset($options['twilio_sid'])   ? $options['twilio_sid']   : '';
+			$this->options['twilio_token'] = isset($options['twilio_token']) ? $options['twilio_token'] : '';
+			$this->options['twilio_phone'] = isset($options['twilio_phone']) ? $options['twilio_phone'] : '';
+		} else {
+			$this->options['send_option'] = self::SEND_OPTION;
+			$this->options['otp_length']  = self::OTP_LENGTH;
+			$this->options['otp_expires'] = self::OTP_EXPIRES;
+		}
+
 		add_action('login_form', array($this, 'login_form'));
-		add_action('register_form', array($this, 'login_form'));
+		add_action('register_form', array($this, 'register_form'));
 		add_action('login_form_otp', array($this, 'login_form_otp'));
 		add_action('login_form_login', array($this, 'login_form_login'));
+		add_action('user_register', array($this, 'user_register'));
 	}
 
 	public function login_form_login(){
@@ -37,6 +60,29 @@ class SpiritsAndGoblins {
 
 	public function login_form(){
 		echo '<input type="hidden" name="action" value="otp" />'."\n";
+	}
+
+	public function user_register($user_id){
+		if ($this->options['send_option'] !== 'sms')
+			return;
+
+		$meta_key = SpiritsAndGoblins_Admin::USER_META_PHONE;
+		$user_phone = isset($_POST[$meta_key]) ? $_POST[$meta_key] : '';
+		if (empty($meta_key))
+			return;
+		update_user_meta($user_id, $meta_key, $user_phone);
+	}
+
+	public function register_form(){
+		if ($this->options['send_option'] !== 'sms')
+			return;
+
+?>
+	<p>
+		<label for="user_email"><?php _e('Phone number', self::TEXT_DOMAIN); ?><br />
+		<input type="text" name="<?php echo SpiritsAndGoblins_Admin::USER_META_PHONE; ?>" id="<?php echo SpiritsAndGoblins_Admin::USER_META_PHONE; ?>" class="input" value="" size="25" /></label>
+	</p>
+<?php
 	}
 
 	public function login_form_otp() {
@@ -149,12 +195,7 @@ class SpiritsAndGoblins {
 </form>
 
 <script type="text/javascript">
-setTimeout( function(){ try{
-d = document.getElementById('user_otp');
-d.focus();
-d.select();
-} catch(e){}
-}, 200);
+setTimeout( function(){ try{d = document.getElementById('user_otp');d.focus();d.select();} catch(e){}}, 200);
 if(typeof wpOnload=='function')wpOnload();
 </script>
 
@@ -164,13 +205,13 @@ if(typeof wpOnload=='function')wpOnload();
 	}
 
 	private function verify_otp($user, $otpass) {
-		if ( !$user || !$user->exists() )
+		if ( !$this->verify_user($user) )
 			return new WP_Error('not_logged_in', __('not logged in', self::TEXT_DOMAIN));
 
-		$seq = get_user_meta($user->ID, 'sag_seq', true);
+		$seq = $this->get_user_meta_transient($user->ID, self::META_KEY_SEQ);
 		if ( !$seq ) {
-			$seq = self::DEFAULT_SEQUENCE;
-			add_user_meta($user->ID, 'sag_seq', $seq, true);
+			$seq = self::DEFAULT_SEQ;
+			$this->set_user_meta_transient($user->ID, self::META_KEY_SEQ, $seq, $this->options['otp_expires']);
 		}
 		$seq = intval($seq);
 
@@ -180,10 +221,10 @@ if(typeof wpOnload=='function')wpOnload();
 			$seq--;
 			if (!$seq) {
 				$otp = new otp();
-				update_user_meta($user->ID, 'sag_seed', $otp->generateSeed());
-				update_user_meta($user->ID, 'sag_seq', self::DEFAULT_SEQUENCE);
+				$this->set_user_meta_transient($user->ID, self::META_KEY_SEED, $otp->generateSeed(), $this->options['otp_expires']);
+				$this->set_user_meta_transient($user->ID, self::META_KEY_SEQ, self::DEFAULT_SEQ, $this->options['otp_expires']);
 			} else {
-				update_user_meta($user->ID, 'sag_seq', $seq);
+				$this->set_user_meta_transient($user->ID, self::META_KEY_SEQ, $seq, $this->options['otp_expires']);
 			}
 		}
 
@@ -193,31 +234,29 @@ if(typeof wpOnload=='function')wpOnload();
 			: new WP_Error('otp_error', sprintf(__('One time password incorrect for %s', self::TEXT_DOMAIN), $user->get('display_name')));
 	}
 
-	private function get_otp($user = null, $seq = false) {
-		if ( !isset($user) )
-			$user = wp_get_current_user();
-		if ( !$user || is_wp_error($user) )
+	private function get_otp($user, $seq = false) {
+		if ( !$this->verify_user($user) )
 			return false;
 
 		$otp = new otp();
 
-		$seed = get_user_meta($user->ID, 'sag_seed', true);
+		$seed = $this->get_user_meta_transient($user->ID, self::META_KEY_SEED);
 		if ( !$seed ) {
 			$seed = $otp->generateSeed();
-			update_user_meta($user->ID, 'sag_seed', $seed);
+			$this->set_user_meta_transient($user->ID, self::META_KEY_SEED, $seed, $this->options['otp_expires']);
 		}
 
 		if ( !$seq ) {
-			$seq = get_user_meta($user->ID, 'sag_seq', true);
+			$seq = $this->get_user_meta_transient($user->ID, self::META_KEY_SEQ);
 			if ( !$seq ) {
-				$seq = self::DEFAULT_SEQUENCE;
-				add_user_meta($user->ID, 'sag_seq', $seq, true);
+				$seq = self::DEFAULT_SEQ;
+				$this->set_user_meta_transient($user->ID, self::META_KEY_SEQ, $seq, $this->options['otp_expires']);
 			}
 		}
 		$seq = intval($seq);
 
 		if ( $pass = $otp->generateOtp($this->pass_phrase(), $seed, $seq, self::OTP_ALGORITHM) ) {
-			$pass_dec = sprintf('%0'.self::OTP_LENGTH.'d', abs(hexdec($pass['hex_otp']) % pow(10,self::OTP_LENGTH)));
+			$pass_dec = sprintf('%0'.$this->options['otp_length'].'d', abs(hexdec($pass['hex_otp']) % pow(10, $this->options['otp_length'])));
 			//update_user_meta($user->ID, 'sag_otp', array('dec_otp' => $pass_dec, 'seequence_count' => $seq));
 			return $pass_dec;
 		} else {
@@ -229,10 +268,12 @@ if(typeof wpOnload=='function')wpOnload();
 		return defined('AUTH_SALT') ? AUTH_SALT : (defined('COOKIEHASH') ? COOKIEHASH : md5(get_site_option('siteurl')));
 	}
 
+	private function verify_user($user){
+		return ($user && !is_wp_error($user) && $user->exists());
+	}
+
 	private function send_otp($user) {
-		if ( !isset($user) )
-			$user = wp_get_current_user();
-		if ( !$user || is_wp_error($user) )
+		if ( !$this->verify_user($user) )
 			return false;
 
 		if ( is_multisite() )
@@ -243,6 +284,133 @@ if(typeof wpOnload=='function')wpOnload();
 
 		$message = $this->get_otp($user);
 
-		wp_mail($user->user_email, $title, $message);
+		$send_option = $this->options['send_option'];
+		if (empty($this->options['twilio_sid']) || empty($this->options['twilio_token']) || empty($this->options['twilio_phone']))
+			$send_option = 'mail';
+		if ($send_option === 'sms' || $send_option === 'tel') {
+			$phone_number = get_user_meta( $user->ID, SpiritsAndGoblins_Admin::USER_META_PHONE, true );
+			if ( !$phone_number )
+				$send_option = 'mail';
+		}
+
+		switch($send_option){
+		case 'sms':
+			$result = $this->sms($phone_number, "{$title}: {$message}", $this->options);
+			if (self::DEBUG_MODE)
+				var_dump($result);
+			if (is_wp_error($result))
+				wp_mail($user->user_email, $title, $message);
+			break;
+		case 'mail':
+		default:
+			wp_mail($user->user_email, $title, $message);
+			break;
+		}
+	}
+
+	private function twilio($sid, $token){
+		return new Services_Twilio($sid, $token, self::TWILIO_VERSION);
+	}
+
+	private function sms($phone_number, $message, $args = array()){
+		$client = $this->twilio($args['twilio_sid'], $args['twilio_token']);
+		try {
+			$message = $client->account->sms_messages->create(
+				$args['twilio_phone'],
+				$phone_number,
+				$message
+				);
+			return "Success: {$message->sid} - {$message->body}\n";
+		} catch (Exception $e) {
+			return new WP_Error('twilio_error', $e->getMessage());
+		}
+	}
+
+	/**
+	 * Delete a user meta transient.
+	 */
+	private function delete_user_meta_transient( $user_id, $transient ) {
+		global $_wp_using_ext_object_cache;
+
+		$user_id = (int) $user_id;
+
+		do_action( 'delete_user_meta_transient_' . $transient, $user_id, $transient );
+
+		if ( $_wp_using_ext_object_cache ) {
+			$result = wp_cache_delete( "{$transient}-{$user_id}", "user_meta_transient-{$user_id}" );
+		} else {
+			$meta_timeout = '_transient_timeout_' . $transient;
+			$meta = '_transient_' . $transient;
+			$result = delete_user_meta( $user_id, $meta );
+			if ( $result )
+				delete_user_meta( $user_id, $meta_timeout );
+		}
+
+		if ( $result )
+			do_action( 'deleted_user_meta_transient', $transient, $user_id, $transient );
+		return $result;
+	}
+
+	/**
+	 * Get the value of a post meta transient.
+	 */
+	private function get_user_meta_transient( $user_id, $transient ) {
+		global $_wp_using_ext_object_cache;
+
+		$user_id = (int) $user_id;
+
+		if (has_filter('pre_user_meta_transient_' . $transient)) {
+			$pre = apply_filters( 'pre_user_meta_transient_' . $transient, $user_id, $transient );
+			if ( false !== $pre )
+				return $pre;
+		}
+
+		if ( $_wp_using_ext_object_cache ) {
+			$value = wp_cache_get( "{$transient}-{$user_id}", "user_meta_transient-{$user_id}" );
+		} else {
+			$meta_timeout = '_transient_timeout_' . $transient;
+			$meta = '_transient_' . $transient;
+			$value = get_user_meta( $user_id, $meta, true );
+			if ( $value && ! defined( 'WP_INSTALLING' ) ) {
+				if ( get_user_meta( $user_id, $meta_timeout, true ) < time() ) {
+					$this->delete_user_meta_transient( $user_id, $transient );
+					return false;
+				}
+			}
+		}
+
+		return 
+			has_filter('user_meta_transient_' . $transient)
+			? apply_filters('user_meta_transient_' . $transient, $value, $user_id)
+			: $value;
+	}
+
+	/**
+	 * Set/update the value of a post meta transient.
+	 */
+	function set_user_meta_transient( $user_id, $transient, $value, $expiration = 0 ) {
+		global $_wp_using_ext_object_cache;
+
+		$user_id = (int) $user_id;
+
+		if (has_filter('pre_set_user_meta_transient_' . $transient)) {
+			$value = apply_filters( 'pre_set_user_meta_transient_' . $transient, $value, $user_id, $transient );
+		}
+
+		if ( $_wp_using_ext_object_cache ) {
+			$result = wp_cache_set( "{$transient}-{$user_id}", $value, "user_meta_transient-{$user_id}", $expiration );
+		} else {
+			$meta_timeout = '_transient_timeout_' . $transient;
+			$meta = '_transient_' . $transient;
+			if ( $expiration ) {
+				update_user_meta( $user_id, $meta_timeout, time() + $expiration );
+			}
+			$result = update_user_meta( $user_id, $meta, $value );
+		}
+		if ( $result ) {
+			do_action( 'set_user_meta_transient_' . $transient, $user_id, $transient );
+			do_action( 'setted_user_meta_transient', $transient, $user_id, $transient );
+		}
+		return $result;
 	}
 }

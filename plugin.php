@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Spirits and Goblins
-Version: 0.1.1
+Version: 0.2.0
 Plugin URI: https://github.com/wokamoto/spirits-and-goblins
 Description:  
 Author: wokamoto
@@ -28,10 +28,15 @@ License:
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
+if ( !class_exists('SpiritsAndGoblins_Admin') )
+	require(dirname(__FILE__).'/includes/class-SpiritsAndGoblins_Admin.php');
 if ( !class_exists('SpiritsAndGoblins') )
 	require dirname(__FILE__).'/includes/class-SpiritsAndGoblins.php';
 
 load_plugin_textdomain(SpiritsAndGoblins::TEXT_DOMAIN, false, dirname(plugin_basename(__FILE__)) . '/languages/');
 
 // Go Go Go!
-$spirits_and_goblins = new SpiritsAndGoblins();
+$spirits_and_goblins = new SpiritsAndGoblins(SpiritsAndGoblins_Admin::get_option());
+
+if (is_admin())
+	new SpiritsAndGoblins_Admin();
