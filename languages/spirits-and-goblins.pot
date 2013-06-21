@@ -88,3 +88,10 @@ msgstr ""
 #: ../includes/class-SpiritsAndGoblins_Admin.php:164
 msgid "Short Message"
 msgstr ""
+
+msgid "When you use Short Message of Send option, you have to sign up <a href=\"http://www.twilio.com/\" title=\"Twilio\">Twilio</a> and get Twilio sid, Twilio token, and Twilio phone number."
+msgstr ""
+
+msgid "Also you need to put in your country and your cell phone number at the <a href=\"%s\">user profile</a>."
+msgstr ""
+

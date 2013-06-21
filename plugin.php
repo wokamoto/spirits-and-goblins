@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Spirits and Goblins
-Version: 0.2.1
+Version: 0.3.0
 Plugin URI: https://github.com/wokamoto/spirits-and-goblins
 Description: This plugin enables 2-step verification using one-time password when you log in your WordPress.
 Author: wokamoto

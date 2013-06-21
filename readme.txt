@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=9S8AJ
 Tags: security, login, one time password, twilio, 2-step verification
 Requires at least: 3.5
 Tested up to: 3.5.1
-Stable tag: 0.2.1
+Stable tag: 0.3.0
 
 This plugin enables 2-step verification using one-time password when you log in your WordPress.
 
@@ -27,16 +27,20 @@ If you have translated into your language, please let me know.
 
 The control panel of Spirits and Goblins is in 'Settings > Spirits and Goblins'.
 
+When you use Short Message of Send option, you have to sign up [Twilio](http://www.twilio.com/ "Twilio") and get Twilio sid, Twilio token, and Twilio phone number.
+Also you need to put in your country and your cell phone number at the user profile.
+
 == Frequently Asked Questions ==
 
 none
 
 == Screenshots ==
 
-1. The admin page
+1. One time password
+2. The admin page
 
 == Changelog == 
 
-**0.2.1 - June 20, 2013**
+**0.3.0 - June 20, 2013**
 
 Initial release.

@@ -175,10 +175,17 @@ class SpiritsAndGoblins_Admin {
 					$key == $this->options[$field] ? ' selected' : '',
 					$val);
 			}
-			$input_field .= '</select></td>';
+			$input_field .= '</select>';
+			$input_field .= '<p>';
+			$input_field .= __('When you use Short Message of Send option, you have to sign up <a href="http://www.twilio.com/" title="Twilio">Twilio</a> and get Twilio sid, Twilio token, and Twilio phone number.', SpiritsAndGoblins::TEXT_DOMAIN).'<br />';
+			$input_field .= sprintf(
+				__('Also you need to put in your country and your cell phone number at the <a href="%s">user profile</a>.', SpiritsAndGoblins::TEXT_DOMAIN),
+				admin_url('profile.php'));
+			$input_field .= '</p>';
+			$input_field .= '</td>';
 			break;
 		default:
-			$input_field = sprintf('<td><input type="text" name="%1$s" value="%2$s" id="%1$s" size=100 /></td>'."\n", $field, esc_attr($this->options[$field]));
+			$input_field = sprintf('<td><input type="text" name="%s" value="%2$s" id="%1$s" size=100 /></td>'."\n", $field, esc_attr($this->options[$field]));
 		}
 
 		echo "<tr>\n{$label}{$input_field}</tr>\n";
