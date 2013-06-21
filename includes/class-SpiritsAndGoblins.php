@@ -43,6 +43,19 @@ class SpiritsAndGoblins {
 		add_action('user_register', array($this, 'user_register'));
 	}
 
+	public function activate(){
+	}
+
+	public function deactivate(){
+		global $wpdb;
+
+		$wpdb->query($wpdb->prepare(
+			"delete from {$wpdb->usermeta} where meta_key like %s or meta_key like %s",
+			'%'.self::META_KEY_SEED,
+			'%'.self::META_KEY_SEQ
+			));
+	}
+
 	public function login_form_login(){
 		global $action;
 
@@ -388,7 +401,7 @@ if(typeof wpOnload=='function')wpOnload();
 	}
 
 	/**
-	 * Get the value of a post meta transient.
+	 * Get the value of a user meta transient.
 	 */
 	private function get_user_meta_transient( $user_id, $transient ) {
 		global $_wp_using_ext_object_cache;
@@ -422,7 +435,7 @@ if(typeof wpOnload=='function')wpOnload();
 	}
 
 	/**
-	 * Set/update the value of a post meta transient.
+	 * Set/update the value of a user meta transient.
 	 */
 	function set_user_meta_transient( $user_id, $transient, $value, $expiration = 0 ) {
 		global $_wp_using_ext_object_cache;
