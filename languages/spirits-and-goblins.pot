@@ -31,7 +31,7 @@ msgid "Phone number"
 msgstr ""
 
 #: ../includes/class-SpiritsAndGoblins.php:178
-msgid "One time password"
+msgid "One-Time Password"
 msgstr ""
 
 #: ../includes/class-SpiritsAndGoblins.php:209
@@ -40,20 +40,20 @@ msgstr ""
 
 #: ../includes/class-SpiritsAndGoblins.php:234
 #, php-format
-msgid "One time password incorrect for %s"
+msgid "One-Time Password incorrect for %s"
 msgstr ""
 
 #: ../includes/class-SpiritsAndGoblins.php:283
 #, php-format
-msgid "[%s] Your one time password"
+msgid "[%s] Your One-Time Password"
 msgstr ""
 
 #: ../includes/class-SpiritsAndGoblins_Admin.php:31
-msgid "One Time Password length"
+msgid "One-Time Password length"
 msgstr ""
 
 #: ../includes/class-SpiritsAndGoblins_Admin.php:32
-msgid "One Time Password expires (sec)"
+msgid "One-Time Password expires (sec)"
 msgstr ""
 
 #: ../includes/class-SpiritsAndGoblins_Admin.php:33

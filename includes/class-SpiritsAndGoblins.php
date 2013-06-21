@@ -182,16 +182,16 @@ class SpiritsAndGoblins {
 			exit();
 		}
 
-		// send One Time Password
+		// send One-Time Password
 		$this->send_otp($user);
 
-		// One Time Password form
+		// One-Time Password form
 		login_header(__('Log In'), '', $otpass ? $verify_otp : null);
 ?>
 
 <form name="loginform" id="loginform" action="<?php echo esc_url( site_url( 'wp-login.php', 'login_post' ) ); ?>" method="post">
 	<p>
-		<label for="user_otp"><?php _e('One time password', self::TEXT_DOMAIN) ?><br />
+		<label for="user_otp"><?php _e('One-Time Password', self::TEXT_DOMAIN) ?><br />
 		<input type="text" name="otp" id="user_otp" class="input" value="<?php echo esc_attr($otpass); ?>" size="20" /></label>
 	</p>
 	<p class="submit">
@@ -247,7 +247,7 @@ if(typeof wpOnload=='function')wpOnload();
 		return
 			$otpass === $otpass_org
 			? true
-			: new WP_Error('otp_error', sprintf(__('One time password incorrect for %s', self::TEXT_DOMAIN), $user->get('display_name')));
+			: new WP_Error('otp_error', sprintf(__('One-Time Password incorrect for %s', self::TEXT_DOMAIN), $user->get('display_name')));
 	}
 
 	private function get_otp($user, $seq = false) {
@@ -296,7 +296,7 @@ if(typeof wpOnload=='function')wpOnload();
 			$blogname = $GLOBALS['current_site']->site_name;
 		else
 			$blogname = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
-		$title = sprintf(__('[%s] Your one time password', self::TEXT_DOMAIN), $blogname);
+		$title = sprintf(__('[%s] Your One-Time Password', self::TEXT_DOMAIN), $blogname);
 
 		$message = $this->get_otp($user);
 

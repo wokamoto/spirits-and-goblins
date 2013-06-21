@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Spirits and Goblins\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2013-06-20 13:08+0900\n"
-"PO-Revision-Date: 2013-06-21 10:51+0900\n"
+"PO-Revision-Date: 2013-06-21 12:55+0900\n"
 "Last-Translator: wokamoto <wokamoto1973@gmail.com>\n"
 "Language-Team: JAPANESE <http://wppluginsj.sourceforge.jp/>\n"
 "Language: ja_JP\n"
@@ -41,7 +41,7 @@ msgid "Phone number"
 msgstr "携帯電話番号"
 
 #: ../includes/class-SpiritsAndGoblins.php:178
-msgid "One time password"
+msgid "One-Time Password"
 msgstr "ワンタイムパスワード"
 
 #: ../includes/class-SpiritsAndGoblins.php:209
@@ -50,20 +50,20 @@ msgstr "ログインしていません"
 
 #: ../includes/class-SpiritsAndGoblins.php:234
 #, php-format
-msgid "One time password incorrect for %s"
+msgid "One-Time Password incorrect for %s"
 msgstr "%s のワンタイムパスワードが違います"
 
 #: ../includes/class-SpiritsAndGoblins.php:283
 #, php-format
-msgid "[%s] Your one time password"
+msgid "[%s] Your One-Time Password"
 msgstr "[%s] あなたのワンタイムパスワード"
 
 #: ../includes/class-SpiritsAndGoblins_Admin.php:31
-msgid "One Time Password length"
+msgid "One-Time Password length"
 msgstr "ワンタイムパスワードの長さ"
 
 #: ../includes/class-SpiritsAndGoblins_Admin.php:32
-msgid "One Time Password expires (sec)"
+msgid "One-Time Password expires (sec)"
 msgstr "ワンタイムパスワードの有効期間 (秒)"
 
 #: ../includes/class-SpiritsAndGoblins_Admin.php:33
@@ -99,8 +99,18 @@ msgstr "メール"
 msgid "Short Message"
 msgstr "ショートメッセージ"
 
-msgid "When you use Short Message of Send option, you have to sign up <a href="\"http://www.twilio.com/\" title=\"Twilio\">Twilio</a> and get Twilio sid, Twilio token, and Twilio phone number."
-msgstr "送信オプションで「ショートメッセージ」を使用するには <a href=\"http://www.twilio.com/\" title=\"Twilio\">Twilio</a> への登録を行い「Twilio sid」「Twilio token」「Twilio phone number」を取得する必要があります。"
+msgid ""
+"When you use Short Message of Send option, you have to sign up <a href="
+"\"http://www.twilio.com/\" title=\"Twilio\">Twilio</a> and get Twilio sid, "
+"Twilio token, and Twilio phone number."
+msgstr ""
+"送信オプションで「ショートメッセージ」を使用するには <a href=\"http://www."
+"twilio.com/\" title=\"Twilio\">Twilio</a> への登録を行い「Twilio sid」"
+"「Twilio token」「Twilio phone number」を取得する必要があります。"
 
-msgid "Also you need to put in your country and your cell phone number at the <a href=\"%s\">user profile</a>."
-msgstr "また、<a href=\"%s\">ユーザープロフィール</a>で「国」と「携帯電話番号」も登録してください。"
+msgid ""
+"Also you need to put in your country and your cell phone number at the <a "
+"href=\"%s\">user profile</a>."
+msgstr ""
+"また、<a href=\"%s\">ユーザープロフィール</a>で「国」と「携帯電話番号」も登録"
+"してください。"

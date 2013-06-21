@@ -38,6 +38,7 @@ none
 
 1. One time password
 2. The admin page
+3. User profile
 
 == Changelog == 
 

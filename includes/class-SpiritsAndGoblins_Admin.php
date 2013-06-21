@@ -33,8 +33,8 @@ class SpiritsAndGoblins_Admin {
 
 	static public function option_keys(){
 		return array(
-			'otp_length'   => __('One Time Password length', SpiritsAndGoblins::TEXT_DOMAIN),
-			'otp_expires'  => __('One Time Password expires (sec)', SpiritsAndGoblins::TEXT_DOMAIN),
+			'otp_length'   => __('One-Time Password length', SpiritsAndGoblins::TEXT_DOMAIN),
+			'otp_expires'  => __('One-Time Password expires (sec)', SpiritsAndGoblins::TEXT_DOMAIN),
 			'send_option'  => __('Send option', SpiritsAndGoblins::TEXT_DOMAIN),
 			'twilio_sid'   => __('Twilio sid', SpiritsAndGoblins::TEXT_DOMAIN),
 			'twilio_token' => __('Twilio token', SpiritsAndGoblins::TEXT_DOMAIN),
