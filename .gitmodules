@@ -1,0 +1,6 @@
+[submodule "includes/libphonenumber-for-PHP"]
+	path = includes/libphonenumber-for-PHP
+	url = git@github.com:davideme/libphonenumber-for-PHP.git
+[submodule "includes/twilio-php"]
+	path = includes/twilio-php
+	url = git@github.com:twilio/twilio-php.git
