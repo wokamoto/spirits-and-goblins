@@ -15,6 +15,6 @@ global $wpdb;
 
 $wpdb->query($wpdb->prepare(
 	"delete from {$wpdb->usermeta} where meta_key like %s or meta_key like %s",
-	'%'.self::META_KEY_SEED,
-	'%'.self::META_KEY_SEQ
+	'%'.SpiritsAndGoblins::META_KEY_SEED,
+	'%'.SpiritsAndGoblins::META_KEY_SEQ
 	));
