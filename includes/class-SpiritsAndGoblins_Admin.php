@@ -9,6 +9,8 @@ class SpiritsAndGoblins_Admin {
 	const USER_META_COUNTRY = 'country';
 	const USER_META_PHONE = 'phone_number';
 
+	const DEFAULT_COUNTRY = 'US';
+
 	static $instance;
 
 	private $options = array();
@@ -24,11 +26,12 @@ class SpiritsAndGoblins_Admin {
 		add_action('admin_menu', array($this, 'admin_menu'));
 		add_filter('plugin_action_links', array($this, 'plugin_setting_links'), 10, 2 );
 
-		add_action('show_user_profile', array($this, 'edit_user_profile'));
-		add_action('edit_user_profile', array($this, 'edit_user_profile'));
-		add_action('personal_options_update', array($this, 'edit_user_profile_update'));
-		add_action('edit_user_profile_update', array($this, 'edit_user_profile_update'));
-		//add_filter('user_contactmethods', array($this, 'user_contactmethods'), 10, 2);
+		if ($this->options['send_option'] === 'sms') {
+			add_action('show_user_profile', array($this, 'edit_user_profile'));
+			add_action('edit_user_profile', array($this, 'edit_user_profile'));
+			add_action('personal_options_update', array($this, 'edit_user_profile_update'));
+			add_action('edit_user_profile_update', array($this, 'edit_user_profile_update'));
+		}
 	}
 
 	static public function option_keys(){
@@ -62,6 +65,14 @@ class SpiritsAndGoblins_Admin {
 			}
 		}
 		return $options;
+	}
+
+	static public function default_country(){
+		$country = __('default country', SpiritsAndGoblins::TEXT_DOMAIN);
+		return
+			$country !== 'default country'
+			? strtoupper($country)
+			: self::DEFAULT_COUNTRY;
 	}
 
 	//**************************************************************************************
@@ -153,6 +164,8 @@ class SpiritsAndGoblins_Admin {
 		</form>
 		</div>
 <?php
+
+		unset($iv);
 	}
 
 	private function input_field($field, $label, $args = array()){
@@ -191,27 +204,21 @@ class SpiritsAndGoblins_Admin {
 		echo "<tr>\n{$label}{$input_field}</tr>\n";
 	}
 
-
-	//**************************************************************************************
-	// Add user contactmethods
-	//**************************************************************************************
-	public function user_contactmethods($user_contactmethods, $user){
-		if ($this->options['send_option'] === 'sms')
-			$user_contactmethods[self::USER_META_COUNTRY] = __('Country', SpiritsAndGoblins::TEXT_DOMAIN);
-			$user_contactmethods[self::USER_META_PHONE] = __('Phone number', SpiritsAndGoblins::TEXT_DOMAIN);
-		return $user_contactmethods;
-	}
-
 	//**************************************************************************************
 	// edit user profile
 	//**************************************************************************************
 	public function edit_user_profile($user) {
+		if ($this->options['send_option'] !== 'sms')
+			return;
+
 		if (!class_exists('CountryNameToCountryCodeMap'))
 			require(dirname(__FILE__).'/class-CountryNameToCountryCodeMap.php');
 		$contry_code = CountryNameToCountryCodeMap::$countryNameToCountryCodeMap;
 
 		$country = get_user_meta($user->ID, self::USER_META_COUNTRY, true);
 		$phone_number = get_user_meta($user->ID, self::USER_META_PHONE, true);
+		if (!$country)
+			$country = self::default_country();
 ?>
 <table class="form-table" id="phone">
 <tbody>
@@ -241,9 +248,12 @@ jQuery(function($){$('#email').parent().parent().after($('table#phone tr'));$('t
 	}
 
 	public function edit_user_profile_update($user_id){
+		if ($this->options['send_option'] !== 'sms')
+			return;
+
 		$iv = new InputValidator('POST');
 		$iv->set_rules(self::USER_META_COUNTRY, array('trim','esc_html'));
-		$iv->set_rules(self::USER_META_PHONE,   array('trim','esc_html'));
+		$iv->set_rules(self::USER_META_PHONE,   array('trim','esc_html', 'tel'));
 
 		if ($iv->input(self::USER_META_COUNTRY))
 			update_user_meta($user_id, self::USER_META_COUNTRY, $iv->input(self::USER_META_COUNTRY));

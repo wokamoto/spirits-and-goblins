@@ -1,6 +1,8 @@
 <?php
 if ( !class_exists('otp') )
-	require dirname(__FILE__).'/php-otp-1.1.1/class.otp.php';
+	require(dirname(__FILE__).'/php-otp-1.1.1/class.otp.php');
+if ( !class_exists('InputValidator') )
+	require(dirname(__FILE__).'/class-InputValidator.php');
 
 class SpiritsAndGoblins {
 	const TEXT_DOMAIN = 'spirits-and-goblins';
@@ -23,24 +25,15 @@ class SpiritsAndGoblins {
 	function __construct($options = null) {
 		self::$instance = $this;
 
-		if ($options) {
-			$this->options['send_option']  = isset($options['send_option'])  ? $options['send_option'] : self::SEND_OPTION;
-			$this->options['otp_length']   = intval(isset($options['otp_length'])  ? $options['otp_length']  : self::OTP_LENGTH);
-			$this->options['otp_expires']  = intval(isset($options['otp_expires']) ? $options['otp_expires'] : self::OTP_EXPIRES);
-			$this->options['twilio_sid']   = isset($options['twilio_sid'])   ? $options['twilio_sid']   : '';
-			$this->options['twilio_token'] = isset($options['twilio_token']) ? $options['twilio_token'] : '';
-			$this->options['twilio_phone'] = isset($options['twilio_phone']) ? $options['twilio_phone'] : '';
-		} else {
-			$this->options['send_option'] = self::SEND_OPTION;
-			$this->options['otp_length']  = self::OTP_LENGTH;
-			$this->options['otp_expires'] = self::OTP_EXPIRES;
-		}
+		$this->options = isset($options) ? $options : SpiritsAndGoblins_Admin::get_option();
 
 		add_action('login_form', array($this, 'login_form'));
-		add_action('register_form', array($this, 'register_form'));
 		add_action('login_form_otp', array($this, 'login_form_otp'));
 		add_action('login_form_login', array($this, 'login_form_login'));
-		add_action('user_register', array($this, 'user_register'));
+		if ($this->options['send_option'] === 'sms') {
+			add_action('register_form', array($this, 'register_form'));
+			add_action('user_register', array($this, 'user_register'));
+		}
 	}
 
 	public function activate(){
@@ -78,13 +71,13 @@ class SpiritsAndGoblins {
 			return;
 
 		$iv = new InputValidator('POST');
-		$iv->set_rules(self::USER_META_COUNTRY, array('trim','esc_html'));
-		$iv->set_rules(self::USER_META_PHONE,   array('trim','esc_html'));
+		$iv->set_rules(SpiritsAndGoblins_Admin::USER_META_COUNTRY, array('trim','esc_html'));
+		$iv->set_rules(SpiritsAndGoblins_Admin::USER_META_PHONE,   array('trim','esc_html', 'tel'));
 
-		if ($iv->input(self::USER_META_COUNTRY))
-			update_user_meta($user_id, self::USER_META_COUNTRY, $iv->input(self::USER_META_COUNTRY));
-		if ($iv->input(self::USER_META_PHONE))
-			update_user_meta($user_id, self::USER_META_PHONE, $iv->input(self::USER_META_PHONE));
+		if ($iv->input(SpiritsAndGoblins_Admin::USER_META_COUNTRY))
+			update_user_meta($user_id, SpiritsAndGoblins_Admin::USER_META_COUNTRY, $iv->input(SpiritsAndGoblins_Admin::USER_META_COUNTRY));
+		if ($iv->input(SpiritsAndGoblins_Admin::USER_META_PHONE))
+			update_user_meta($user_id, SpiritsAndGoblins_Admin::USER_META_PHONE, $iv->input(SpiritsAndGoblins_Admin::USER_META_PHONE));
 
 		unset($iv);
 	}
@@ -97,6 +90,18 @@ class SpiritsAndGoblins {
 			require(dirname(__FILE__).'/class-CountryNameToCountryCodeMap.php');
 		$contry_code = CountryNameToCountryCodeMap::$countryNameToCountryCodeMap;
 
+		$iv = new InputValidator('POST');
+		$iv->set_rules(SpiritsAndGoblins_Admin::USER_META_COUNTRY, array('trim','esc_html'));
+		$iv->set_rules(SpiritsAndGoblins_Admin::USER_META_PHONE,   array('trim','esc_html', 'tel'));
+		$country = 
+			$iv->input(SpiritsAndGoblins_Admin::USER_META_COUNTRY)
+			? $iv->input(SpiritsAndGoblins_Admin::USER_META_COUNTRY)
+			: SpiritsAndGoblins_Admin::default_country();
+		$phone_number =
+			$iv->input(SpiritsAndGoblins_Admin::USER_META_PHONE)
+			? $iv->input(SpiritsAndGoblins_Admin::USER_META_PHONE)
+			: '';
+		unset($iv);
 ?>
 	<p>
 		<label for="<?php echo SpiritsAndGoblins_Admin::USER_META_COUNTRY; ?>"><?php _e('Country', self::TEXT_DOMAIN); ?></label>
@@ -104,12 +109,12 @@ class SpiritsAndGoblins {
 		<option value=""></option>
 <?php foreach ($contry_code as $name => $code) { ?>
 
-		<option value="<?php echo esc_attr($code); ?>"><?php echo $name; ?></option>
+		<option value="<?php echo esc_attr($code); ?>"<?php echo $code == $country ? ' selected' : ''; ?>><?php echo $name; ?></option>
 <?php } ?>
 	</select></p>
 	<p>
 		<label for="user_email"><?php _e('Phone number', self::TEXT_DOMAIN); ?><br />
-		<input type="text" name="<?php echo SpiritsAndGoblins_Admin::USER_META_PHONE; ?>" id="<?php echo SpiritsAndGoblins_Admin::USER_META_PHONE; ?>" class="input" value="" size="25" /></label>
+		<input type="text" name="<?php echo SpiritsAndGoblins_Admin::USER_META_PHONE; ?>" id="<?php echo SpiritsAndGoblins_Admin::USER_META_PHONE; ?>" class="input" value="<?php echo esc_attr($phone_number); ?>" size="25" /></label>
 	</p>
 <?php
 	}
@@ -157,7 +162,7 @@ class SpiritsAndGoblins {
 		if ( !$secure_cookie && is_ssl() && force_ssl_login() && !force_ssl_admin() && ( 0 !== strpos($redirect_to, 'https') ) && ( 0 === strpos($redirect_to, 'http') ) )
 			$secure_cookie = false;
 
-		// verify One time Password
+		// verify One-Time Password
 		$verify_otp = $this->verify_otp($user, $otpass);
 		if ( !is_wp_error($verify_otp) ) {
 			wp_set_auth_cookie($user->ID, $rememberme, $secure_cookie);

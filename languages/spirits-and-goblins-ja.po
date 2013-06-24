@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Spirits and Goblins\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2013-06-20 13:08+0900\n"
-"PO-Revision-Date: 2013-06-21 12:55+0900\n"
+"PO-Revision-Date: 2013-06-24 10:08+0900\n"
 "Last-Translator: wokamoto <wokamoto1973@gmail.com>\n"
 "Language-Team: JAPANESE <http://wppluginsj.sourceforge.jp/>\n"
 "Language: ja_JP\n"
@@ -27,6 +27,10 @@ msgid ""
 msgstr ""
 "このプラグインを有効にすることで、WordPress ログイン時にワンタイムパスワード"
 "による二段階認証を導入することができます。"
+
+# default country (ex. US, JP, FR...)
+msgid "default country"
+msgstr "JP"
 
 #: ../includes/class-SpiritsAndGoblins.php:58
 msgid "Unknown error!"

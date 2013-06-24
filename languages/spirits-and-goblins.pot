@@ -22,6 +22,10 @@ msgstr ""
 msgid "Unknown error!"
 msgstr ""
 
+# default country (ex. US, JP, FR...)
+msgid "default country"
+msgstr "US"
+
 msgid "Country"
 msgstr ""
 
